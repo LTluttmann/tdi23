@@ -33,10 +33,12 @@ def create_dir_hook(spawner):
     A function to clone a github repo into a specific directory of a
     JupyterHub user when the server spawns a new notebook instance.
     """
+    logger.info("Spawner is of type %s" % type(spawner))
     username = spawner.user.name
     logger.info("User %s just logged in..." % username)
     user_root_dir = os.path.join("/home", "jupyter-%s" % username)
     if not os.path.isdir(user_root_dir):
+        logger.info("Directory not available yet. Creating...")
         os.mkdir(user_root_dir)
     git_url = "https://github.com/ProfessorKazarinoff/ENGR101.git"
     repo_dir = os.path.join(user_root_dir, 'notebooks')
