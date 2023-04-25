@@ -3,6 +3,10 @@ from git import Repo
 import os
 import shutil
 from pwd import getpwnam
+import sys
+import subprocess
+from os.path import expanduser
+from tljh.utils import get_plugin_manager
 
 
 logger = logging.getLogger(__name__)
@@ -28,18 +32,40 @@ def clone_repo(user, git_url, repo_dir):
             shutil.chown(os.path.join(root, f), user=uid, group=gid)
 
 
+def ensure_user(username):
+    """
+    Make sure a given user exists
+    """
+    # Check if user exists
+    try:
+        getpwnam(username)
+        # User exists, nothing to do!
+        return
+    except KeyError:
+        # User doesn't exist, time to create!
+        logger.info("User does not exists yet. Creating...")
+
+    subprocess.check_call(["useradd", "--create-home", username])
+
+    subprocess.check_call(["chmod", "o-rwx", expanduser(f"~{username}")])
+
+    pm = get_plugin_manager()
+    pm.hook.tljh_new_user_create(username=username)
+
+
 def create_dir_hook(spawner):
     """
     A function to clone a github repo into a specific directory of a
     JupyterHub user when the server spawns a new notebook instance.
+    args: spawner is of type tljh UserCreateSpawner
     """
-    logger.info("Spawner is of type %s" % type(spawner))
+
     username = spawner.user.name
     logger.info("User %s just logged in..." % username)
+    
+    ensure_user(username)
+    
     user_root_dir = os.path.join("/home", "jupyter-%s" % username)
-    if not os.path.isdir(user_root_dir):
-        logger.info("Directory not available yet. Creating...")
-        os.mkdir(user_root_dir)
     git_url = "https://github.com/ProfessorKazarinoff/ENGR101.git"
     repo_dir = os.path.join(user_root_dir, 'notebooks')
 
