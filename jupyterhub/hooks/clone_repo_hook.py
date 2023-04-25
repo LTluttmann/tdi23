@@ -50,6 +50,7 @@ def create_dir_hook(spawner):
             clone_repo(username, git_url, repo_dir)
         except Exception as e:
             logger.error(e)
+            raise
 
     if ERASE_DIR == False and not (os.path.isdir(repo_dir)):
         logger.info("Fetching repo %s ..." % git_url)
@@ -58,6 +59,7 @@ def create_dir_hook(spawner):
             clone_repo(username, git_url, repo_dir)
         except Exception as e:
             logger.error(e)
+            raise
 
     if ERASE_DIR == False and os.path.isdir(repo_dir):
         logger.info("User is already setup")
