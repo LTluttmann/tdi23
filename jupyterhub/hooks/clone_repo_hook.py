@@ -7,6 +7,7 @@ import sys
 import subprocess
 from os.path import expanduser
 from tljh.utils import get_plugin_manager
+from tljh.normalize import generate_system_username
 
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,6 @@ def ensure_user(username):
         logger.info("User does not exists yet. Creating...")
 
     subprocess.check_call(["useradd", "--create-home", username])
-
     subprocess.check_call(["chmod", "o-rwx", expanduser(f"~{username}")])
 
     pm = get_plugin_manager()
@@ -62,10 +62,10 @@ def create_dir_hook(spawner):
 
     username = spawner.user.name
     logger.info("User %s just logged in..." % username)
+    system_username = generate_system_username("jupyter-" + username)
+    ensure_user(system_username)
     
-    ensure_user(username)
-    
-    user_root_dir = os.path.join("/home", "jupyter-%s" % username)
+    user_root_dir = os.path.join("/home", system_username)
     git_url = "https://github.com/ProfessorKazarinoff/ENGR101.git"
     repo_dir = os.path.join(user_root_dir, 'notebooks')
 
@@ -75,21 +75,21 @@ def create_dir_hook(spawner):
             shutil.rmtree(repo_dir)
         try:
             os.makedirs(repo_dir)
-            clone_repo(username, git_url, repo_dir)
+            clone_repo(system_username, git_url, repo_dir)
         except Exception as e:
             logger.error(e)
             raise
 
-    if ERASE_DIR == False and not (os.path.isdir(repo_dir)):
+    elif ERASE_DIR == False and not (os.path.isdir(repo_dir)):
         logger.info("Fetching repo %s ..." % git_url)
         try:
             os.makedirs(repo_dir)
-            clone_repo(username, git_url, repo_dir)
+            clone_repo(system_username, git_url, repo_dir)
         except Exception as e:
             logger.error(e)
             raise
 
-    if ERASE_DIR == False and os.path.isdir(repo_dir):
+    elif ERASE_DIR == False and os.path.isdir(repo_dir):
         logger.info("User is already setup")
         pass
 
