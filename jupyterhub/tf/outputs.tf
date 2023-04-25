@@ -1,5 +1,5 @@
 output "public_ip_address" {
-  value = azurerm_linux_virtual_machine.jupyterhub.public_ip_address
+  value = azurerm_linux_virtual_machine.tdi.public_ip_address
 }
 
 output "tls_private_key" {

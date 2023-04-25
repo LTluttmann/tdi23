@@ -1,19 +1,19 @@
 resource "azurerm_resource_group" "rg" {
-  name     = "jupy_group"
+  name     = "tdi_group"
   location = "westeurope"
 }
 
 # Create virtual network
 resource "azurerm_virtual_network" "vnet" {
-  name                = "jupyterhub-vnet"
+  name                = "tdi-vnet"
   address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.rg
+  location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
 # Create subnet
 resource "azurerm_subnet" "subnet" {
-  name                 = "jupyterhub-vnet"
+  name                 = "tdi-subnet"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
@@ -21,19 +21,18 @@ resource "azurerm_subnet" "subnet" {
 
 # Create public IPs
 resource "azurerm_public_ip" "public_ip" {
-  name                = "jupyterhub-ip"
+  name                = "tdi-ip"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Dynamic"
 }
 
 # Create Network Security Group and rule
-resource "azurerm_network_security_group" "jupyterhub_nsg" {
+resource "azurerm_network_security_group" "tdi_nsg" {
   name                = "myNetworkSecurityGroup"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  security_rule = [ 
-  {
+  security_rule {
     name                       = "SSH"
     priority                   = 300
     direction                  = "Inbound"
@@ -43,8 +42,8 @@ resource "azurerm_network_security_group" "jupyterhub_nsg" {
     destination_port_range     = "22"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
-  } , 
-  {
+  }
+  security_rule {
     name                       = "HTTP"
     priority                   = 320
     direction                  = "Inbound"
@@ -54,8 +53,8 @@ resource "azurerm_network_security_group" "jupyterhub_nsg" {
     destination_port_range     = "80"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
-  }, 
-  {
+  }
+  security_rule {
     name                       = "HTTPS"
     priority                   = 340
     direction                  = "Inbound"
@@ -65,11 +64,11 @@ resource "azurerm_network_security_group" "jupyterhub_nsg" {
     destination_port_range     = "443"
     source_address_prefix      = "*"
     destination_address_prefix = "*"
-  } ]
+  }
 }
 
 # Create network interface
-resource "azurerm_network_interface" "jupyterhub_nic" {
+resource "azurerm_network_interface" "tdi_nic" {
   name                = "NIC"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
@@ -84,19 +83,10 @@ resource "azurerm_network_interface" "jupyterhub_nic" {
 
 # Connect the security group to the network interface
 resource "azurerm_network_interface_security_group_association" "example" {
-  network_interface_id      = azurerm_network_interface.jupyterhub_nic.id
-  network_security_group_id = azurerm_network_security_group.jupyterhub_nsg.id
+  network_interface_id      = azurerm_network_interface.tdi_nic.id
+  network_security_group_id = azurerm_network_security_group.tdi_nsg.id
 }
 
-
-# Create storage account for boot diagnostics
-resource "azurerm_storage_account" "my_storage_account" {
-  name                     = "diag${random_id.random_id.hex}"
-  location                 = azurerm_resource_group.rg.location
-  resource_group_name      = azurerm_resource_group.rg.name
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-}
 
 # Create (and display) an SSH key
 resource "tls_private_key" "example_ssh" {
@@ -104,29 +94,17 @@ resource "tls_private_key" "example_ssh" {
   rsa_bits  = 4096
 }
 
-# define cloud init. Install jupyterhub
-data "template_cloudinit_config" "config" {
-  gzip          = true
-  base64_encode = true
-
-  # Main cloud-config configuration file.
-  part {
-    content_type = "text/cloud-config"
-    content      = "packages: ['httpie']"
-  }
-}
-
 
 # Create virtual machine
-resource "azurerm_linux_virtual_machine" "jupyterhub" {
-  name                  = "jupyterhub"
+resource "azurerm_linux_virtual_machine" "tdi" {
+  name                  = "tdi"
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
-  network_interface_ids = [azurerm_network_interface.jupyterhub_nic.id]
+  network_interface_ids = [azurerm_network_interface.tdi_nic.id]
   size                  = "Standard_B1s"
 
   os_disk {
-    name                 = "jupyterhub_OsDisk_1_d9cf03a97166418d9706ed76144e5070"
+    name                 = "tdi_osdisk"
     caching              = "ReadWrite"
     storage_account_type = "Premium_LRS"
   }
@@ -138,20 +116,17 @@ resource "azurerm_linux_virtual_machine" "jupyterhub" {
     version   = "latest"
   }
 
-  computer_name                   = "tdi_on_azure"
-  admin_username                  = "tdi2023"
-  admin_password                  = var.admin_password
-
-  custom_data = data.template_cloudinit_config.config.rendered
-
-  disable_password_authentication = false
-
   admin_ssh_key {
     username   = "tdi2023"
     public_key = tls_private_key.example_ssh.public_key_openssh
   }
 
-  boot_diagnostics {
-    storage_account_uri = azurerm_storage_account.my_storage_account.primary_blob_endpoint
-  }
+  computer_name                   = "tdionazure"
+  admin_username                  = "tdi2023"
+  admin_password                  = var.admin_password
+
+  custom_data = data.cloudinit_config.config.rendered
+
+  disable_password_authentication = false
+
 }
