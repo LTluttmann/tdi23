@@ -35,22 +35,29 @@ def create_dir_hook(spawner):
     """
     username = spawner.user.name
     logger.info("User %s just logged in..." % username)
-    DIR_NAME = os.path.join("/home", "jupyter-%s" % username)
-    
+    user_root_dir = os.path.join("/home", "jupyter-%s" % username)
+    if not os.path.isdir(user_root_dir):
+        os.mkdir(user_root_dir)
     git_url = "https://github.com/ProfessorKazarinoff/ENGR101.git"
-    repo_dir = os.path.join(DIR_NAME, 'notebooks')
+    repo_dir = os.path.join(user_root_dir, 'notebooks')
 
     if ERASE_DIR == True:
         logger.info("Fetching repo %s ..." % git_url)
         if os.path.isdir(repo_dir):
             shutil.rmtree(repo_dir)
-        os.mkdir(repo_dir)
-        clone_repo(username, git_url, repo_dir)
+        try:
+            os.makedirs(repo_dir)
+            clone_repo(username, git_url, repo_dir)
+        except Exception as e:
+            logger.error(e)
 
     if ERASE_DIR == False and not (os.path.isdir(repo_dir)):
         logger.info("Fetching repo %s ..." % git_url)
-        os.mkdir(repo_dir)
-        clone_repo(username, git_url, repo_dir)
+        try:
+            os.makedirs(repo_dir)
+            clone_repo(username, git_url, repo_dir)
+        except Exception as e:
+            logger.error(e)
 
     if ERASE_DIR == False and os.path.isdir(repo_dir):
         logger.info("User is already setup")
