@@ -10,9 +10,9 @@ toLower() {
 
 
 # names=("Marie Stoltenberg" "Tom Peters" "Heiko Westermann")
-names_string = ${names_file}
+names_array = ${names}
 
-for name in "${names[@]}"
+for name in "${names_array[@]}"
 do
         lname=$(getLastName "${name}")
         firstChar="${name:0:1}"
