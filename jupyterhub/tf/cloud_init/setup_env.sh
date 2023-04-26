@@ -1,9 +1,18 @@
 #!/bin/bash
 
+NAMES=(
+        "Marie Stoltenberg" 
+        "Tom Peters" 
+        "Heiko Westermann"
+)
+
+GIT_REPO="https://github.com/LTluttmann/tdi23.git"
+
+
 # install jupyterhub
 curl -L https://tljh.jupyter.org/bootstrap.py \
   | sudo python3 - \
-    --admin tdi2023
+    --admin tdi2023 --plugin git+https://github.com/LTluttmann/tljh-repo2user-dir.git
 
 # add users
 getLastName() {
@@ -14,11 +23,7 @@ toLower() {
         echo $1 | tr '[:upper:]' '[:lower:]'
 }
 
-names_array=(
-        "Marie Stoltenberg" 
-        "Tom Peters" 
-        "Heiko Westermann"
-)
+names_array=$NAMES
 
 for name in "${names_array[@]}"
 do
@@ -31,11 +36,16 @@ done
 
 sudo tljh-config reload
 
-# need to install GitPython in the right environment, 
-# thus explicitly name it here
-sudo /opt/tljh/hub/bin/python -m pip install GitPython
+# in this blog we the the environment variable for the repo to be cloned
+# this is a bit messy. But actually the only way to change the environment variables
+# of the root user
+sudo mkdir /etc/systemd/system/jupyterhub.service.d 
+sudo touch /etc/systemd/system/jupyterhub.service.d/override.conf
+sudo tee -a /etc/systemd/system/jupyterhub.service.d/override.conf > /dev/null <<EOT
+[Service]
+Environment=REPO_URL="${GIT_REPO}"
+EOT
 
-# curl the python hook file for cloning repo in user spaces
-sudo curl -L https://raw.githubusercontent.com/LTluttmann/tdi23/main/jupyterhub/hooks/clone_repo_hook.py > hook.py
-sudo mv hook.py /opt/tljh/config/jupyterhub_config.d/
+sudo systemctl daemon-reload
 sudo systemctl restart jupyterhub
+
