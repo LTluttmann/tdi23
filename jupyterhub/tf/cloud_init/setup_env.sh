@@ -1,10 +1,6 @@
 #!/bin/bash
 
-NAMES=(
-        "Marie Stoltenberg" 
-        "Tom Peters" 
-        "Heiko Westermann"
-)
+NUM_ACCOUNTS=17
 
 GIT_REPO="https://github.com/LTluttmann/tdi23.git"
 
@@ -14,25 +10,14 @@ curl -L https://tljh.jupyter.org/bootstrap.py \
   | sudo python3 - \
     --admin tdi2023 --plugin git+https://github.com/LTluttmann/tljh-repo2user-dir.git
 
+
 # add users
-getLastName() {
-    echo $1 | rev | cut -d " "  -f 1 | rev
-}
-
-toLower() {
-        echo $1 | tr '[:upper:]' '[:lower:]'
-}
-
-names_array=$NAMES
-
-for name in "${names_array[@]}"
+for ((n=0;n<$NUM_ACCOUNTS;n++))
 do
-        lname=$(getLastName "${name}")
-        firstChar="${name:0:1}"
-        username="${firstChar}${lname}"
-        username=$(toLower $username)
-        sudo tljh-config add-item users.allowed $username
+ username="kims$n"
+ sudo tljh-config add-item users.allowed $username
 done
+
 
 sudo tljh-config reload
 
