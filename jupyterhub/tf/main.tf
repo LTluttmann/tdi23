@@ -130,3 +130,74 @@ resource "azurerm_linux_virtual_machine" "tdi" {
   disable_password_authentication = false
 
 }
+
+
+##########
+# BACKUP VM
+##########
+
+
+# Create public IPs
+resource "azurerm_public_ip" "public_ip2" {
+  name                = "tdi-ip2"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Dynamic"
+}
+
+# Create network interface
+resource "azurerm_network_interface" "tdi_nic2" {
+  name                = "NIC2"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  ip_configuration {
+    name                          = "nic_configuration"
+    subnet_id                     = azurerm_subnet.subnet.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.public_ip2.id
+  }
+}
+
+# Connect the security group to the network interface
+resource "azurerm_network_interface_security_group_association" "example2" {
+  network_interface_id      = azurerm_network_interface.tdi_nic2.id
+  network_security_group_id = azurerm_network_security_group.tdi_nsg.id
+}
+
+
+# Create virtual machine
+resource "azurerm_linux_virtual_machine" "tdi2" {
+  name                  = "tdi2"
+  location              = azurerm_resource_group.rg.location
+  resource_group_name   = azurerm_resource_group.rg.name
+  network_interface_ids = [azurerm_network_interface.tdi_nic2.id]
+  size                  = "Standard_D2s_v3"
+
+  os_disk {
+    name                 = "tdi_osdisk2"
+    caching              = "ReadWrite"
+    storage_account_type = "Premium_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts-gen2"
+    version   = "latest"
+  }
+
+  admin_ssh_key {
+    username   = "tdi2023"
+    public_key = tls_private_key.example_ssh.public_key_openssh
+  }
+
+  computer_name                   = "tdionazure2"
+  admin_username                  = "tdi2023"
+  admin_password                  = var.admin_password
+
+  custom_data = data.cloudinit_config.config.rendered
+
+  disable_password_authentication = false
+
+}
