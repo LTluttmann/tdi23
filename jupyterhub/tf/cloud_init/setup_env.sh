@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NUM_ACCOUNTS=17
+NUM_ACCOUNTS=20
 
 GIT_REPO="https://github.com/LTluttmann/tdi23.git"
 
