@@ -1,0 +1,3 @@
+https://www.plattform-lernende-systeme.de/ki-in-deutschland.html
+https://playground.tensorflow.org/
+https://teachablemachine.withgoogle.com/
