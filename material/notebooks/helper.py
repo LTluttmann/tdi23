@@ -45,8 +45,3 @@ class SingleNeuronNN(nn.Module):
 
     def forward(self, x):
         return torch.sigmoid(self.linear(x))
-
-
-X,y = generate_data()
-x_min = X[:,0].min(); x_max = X[:,0].max()
-x_plot = np.linspace(x_min, x_max, 100)
