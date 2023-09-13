@@ -1,5 +1,4 @@
 numpy
 matplotlib
-tensorflow
 torch
-Pillow
+ipympl
