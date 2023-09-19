@@ -20,3 +20,5 @@ To install pip packages in all user environments, login as admin user to jupyter
 ```
 sudo -E pip install numpy
 ```
+
+The jupyterhub configuration uses the TLJH plugin [**tljh-repo2user-dir**](https://github.com/LTluttmann/tljh-repo2user-dir) which populates every users home directory with the materials of this repository.
